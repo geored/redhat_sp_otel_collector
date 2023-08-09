@@ -1,0 +1,6 @@
+# Artifact Hub repository metadata file
+# Used to become verified publisher and more - https://artifacthub.io/docs/topics/repositories/#verified-publisher
+repositoryID: ddaba081-f36f-4a27-be14-0572e2e7cb7e
+owners:
+  - name: Gjorgji Georgievski
+    email: ggeorgie@redhat.com
