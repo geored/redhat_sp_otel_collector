@@ -2,17 +2,146 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1
+mode: "deployment"
+
+# Define openshift cluster type:  if it is MP+ then clusterMpp should be true, for every other type clusterMpp should be false
+# This will determine what type of openshift service type will be created for the collector
+clusterType:
+  clusterMpp: false
+
+
+configMap:
+  create: true
+
+# ConfigMap configuration for the collector:
+config:
+  exporters:
+    logging:
+      loglevel: info
+    # this can be only otlp exporter
+    otlphttp:
+      endpoint: https://api.honeycomb.io:443
+      headers:
+        "x-honeycomb-team": ${HONEYCOMB_API_TOKEN}
+    # this needs to be $HNC_DEV_TOKEN for shared-dev honeycomb environment
+    otlp/dev:
+      endpoint: https://api.honeycomb.io:443
+      headers:
+        "x-honeycomb-team": ${HONEYCOMB_API_DEV_TOKEN}
+    # this needs to be $HNC_STAGE_TOKEN for shared-stage honeycomb environment 
+    otlp/stage:
+      endpoint: https://api.honeycomb.io:443
+      headers:
+        "x-honeycomb-team": ${HONEYCOMB_API_STAGE_TOKEN}   
+    sapm:
+      access_token: ${SIGNALFX_ACCESS_TOKEN}
+      endpoint: "https://ingest.us1.signalfx.com/v2/trace"
+    signalfx:
+      endpoint: "https://api.signalfx.com/v2/traces"
+      access_token: ${SIGNALFX_ACCESS_TOKEN}
+      realm: "us1"
+      api_url: "https://api.us1.signalfx.com"
+  extensions:
+    # The health_check extension is mandatory for this chart.
+    # Without the health_check extension the collector will fail the readiness and liveliness probes.
+    # The health_check extension can be modified, but should never be removed.
+    health_check: {}
+    memory_ballast: {}
+  processors:
+    batch: {}
+    # If set to null, will be overridden with values based on k8s resource limits
+    memory_limiter: 
+      check_interval: 2s
+      limit_mib: 512
+      spike_limit_percentage: 128
+  receivers:
+    jaeger: null
+    prometheus: null
+    zipkin: null
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+          max_recv_msg_size_mib: 999999999
+        http:
+          endpoint: 0.0.0.0:4318
+    otlp/dev:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4319
+          max_recv_msg_size_mib: 999999999
+        http:
+          endpoint: 0.0.0.0:4320
+    otlp/stage:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4321
+          max_recv_msg_size_mib: 999999999
+        http:
+          endpoint: 0.0.0.0:4322
+  service:
+    extensions:
+      - health_check
+      - memory_ballast
+    pipelines:
+      logs:
+        exporters:
+          - logging
+        receivers:
+          - otlp
+          - otlp/dev
+          - otlp/stage
+
+      traces:
+        exporters:
+          - logging
+          - otlphttp
+          - signalfx
+          - sapm
+        processors:
+          - memory_limiter
+          - batch
+        receivers:
+          - otlp
+
+      traces/dev:
+        exporters:
+          - logging
+          - otlp/dev
+          - sapm
+          - signalfx
+        processors:
+          - memory_limiter
+          - batch
+        receivers:
+          - otlp/dev
+
+      traces/stage:
+        exporters:
+          - logging
+          - otlp/stage
+          - sapm
+          - signalfx
+        processors:
+          - memory_limiter
+          - batch
+        receivers:
+          - otlp/stage
+      metrics: null
+
 
 image:
-  repository: nginx
+  repository: quay.io/raks.tt/otel-collector-contrib
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "latest"
 
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
+
+# OpenTelemetry Collector executable
+command:
+  name: otelcol-contrib
+  extraArgs: []
+
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -23,60 +152,145 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+clusterRole:
+  # Specifies whether a clusterRole should be created
+  create: false
+  # Annotations to add to the clusterRole
+  annotations: {}
+  # The name of the clusterRole to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+  # A set of rules as documented here : https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+  rules: []
+
+  clusterRoleBinding:
+    # Annotations to add to the clusterRoleBinding
+    annotations: {}
+    # The name of the clusterRoleBinding to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+
+
+# Allows for pod scheduler prioritisation
+priorityClassName: ""
+
+extraEnvs:
+  - name: HONEYCOMB_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: "{{ otel_collector_name }}-opentelemetry-collector"
+        key: honeycomb_token
+  - name: HONEYCOMB_API_DEV_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: "{{ otel_collector_name }}-opentelemetry-collector"
+        key: honeycomb_dev_token
+  - name: HONEYCOMB_API_STAGE_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: "{{ otel_collector_name }}-opentelemetry-collector"
+        key: honeycomb_stage_token
+  - name: SIGNALFX_ACCESS_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: "{{ otel_collector_name }}-opentelemetry-collector"
+        key: splunk_observability_access_token
+extraVolumes: 
+  - name: "{{ otel_collector_redhat_ca_bundle}}"
+    configMap:
+      name: "{{ otel_collector_redhat_ca_bundle}}"
+      defaultMode: 420
+
+extraVolumeMounts: 
+  - name: "{{ otel_collector_redhat_ca_bundle}}"
+    mountPath: /etc/ssl/certs/ca-certificates.crt
+    subPath: ca-bundle.crt
+
+# Configuration for ports
+ports:
+  otlp:
+    enabled: true
+    containerPort: 4317
+    servicePort: 4317
+    hostPort: 4317
+    protocol: TCP
+  otlp-http:
+    enabled: true
+    containerPort: 4318
+    servicePort: 4318
+    hostPort: 4318
+    protocol: TCP
+  otlp-dev:
+    enabled: true
+    containerPort: 4319
+    servicePort: 4319
+    hostPort: 4319
+    protocol: TCP
+  otlp-dev-http:
+    enabled: true
+    containerPort: 4320
+    servicePort: 4320
+    hostPort: 4320
+    protocol: TCP
+  otlp-stage:
+    enabled: true
+    containerPort: 4321
+    servicePort: 4321
+    hostPort: 4321
+    protocol: TCP
+  otlp-stage-http:
+    enabled: true
+    containerPort: 4322
+    servicePort: 4322
+    hostPort: 4322
+    protocol: TCP
+  jaeger-compact:
+    enabled: false
+  jaeger-thrift:
+    enabled: false
+  jaeger-grpc:
+    enabled: false
+  zipkin:
+    enabled: false
+
+
+# Resource limits & requests. Update according to your own use case as these values might be too low for a typical deployment.
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2000mi
+  requests:
+    cpu: 1000m
+    memory: 2000mi
+
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podLabels: {}
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+# Host networking requested for this pod. Use the host's network namespace.
+hostNetwork: false
+
+# Pod DNS policy ClusterFirst, ClusterFirstWithHostNet, None, Default, None
+dnsPolicy: ""
+
+# only used with deployment mode
+replicaCount: 2
+
+initContainers: []
+# Pod lifecycle policies.
+lifecycleHooks: {}
 
 service:
-  type: ClusterIP
-  port: 80
-
+#  type: LoadBalancer for mpp environment only
+  type: {{ serviceType }}
+  annotations: {}
 ingress:
   enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
 
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
-
+# autoscaling is used only if deployment enabled
 autoscaling:
   enabled: false
   minReplicas: 1
-  maxReplicas: 100
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}

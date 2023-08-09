@@ -60,3 +60,14 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Create the service type for openshift collector services (MPP LoadBalancer | ClusterIP for the rest)
+*/}}
+{{- define "redhat-sp-otel-collector.serviceType" -}}
+{{- if .Values.clusterType.clusterMpp }}
+{{- default ("LoadBalancer") .Values.serviceType.name }}
+{{- else }}
+{{- default "ClusterIP" .Values.serviceType.name }}
+{{- end }}
+{{- end }}
