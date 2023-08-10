@@ -187,31 +187,31 @@ extraEnvs:
   - name: HONEYCOMB_API_TOKEN
     valueFrom:
       secretKeyRef:
-        name: "{{ otel_collector_name }}-opentelemetry-collector"
+        name: "otel_collector_name-opentelemetry-collector"
         key: honeycomb_token
   - name: HONEYCOMB_API_DEV_TOKEN
     valueFrom:
       secretKeyRef:
-        name: "{{ otel_collector_name }}-opentelemetry-collector"
+        name: "otel_collector_name-opentelemetry-collector"
         key: honeycomb_dev_token
   - name: HONEYCOMB_API_STAGE_TOKEN
     valueFrom:
       secretKeyRef:
-        name: "{{ otel_collector_name }}-opentelemetry-collector"
+        name: "otel_collector_name-opentelemetry-collector"
         key: honeycomb_stage_token
   - name: SIGNALFX_ACCESS_TOKEN
     valueFrom:
       secretKeyRef:
-        name: "{{ otel_collector_name }}-opentelemetry-collector"
+        name: "otel_collector_name-opentelemetry-collector"
         key: splunk_observability_access_token
 extraVolumes:
-  - name: "{{ otel_collector_redhat_ca_bundle}}"
+  - name: "otel_collector_redhat_ca_bundle"
     configMap:
-      name: "{{ otel_collector_redhat_ca_bundle}}"
+      name: "otel_collector_redhat_ca_bundle"
       defaultMode: 420
 
 extraVolumeMounts:
-  - name: "{{ otel_collector_redhat_ca_bundle}}"
+  - name: "otel_collector_redhat_ca_bundle"
     mountPath: /etc/ssl/certs/ca-certificates.crt
     subPath: ca-bundle.crt
 
@@ -293,7 +293,7 @@ lifecycleHooks: {}
 
 service:
   #  type: LoadBalancer for mpp environment only
-  type: {{serviceType}}
+  type: ClusterIP
   annotations: {}
 ingress:
   enabled: false
