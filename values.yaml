@@ -2,10 +2,13 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+---
 mode: "deployment"
 
-# Define openshift cluster type:  if it is MP+ then clusterMpp should be true, for every other type clusterMpp should be false
-# This will determine what type of openshift service type will be created for the collector
+# Define openshift cluster type:  if it is MP+ then clusterMpp should be true
+# for every other type clusterMpp should be false
+# This will determine what type of openshift service type will be created for
+# the collector
 clusterType:
   clusterMpp: false
 
@@ -28,11 +31,11 @@ config:
       endpoint: https://api.honeycomb.io:443
       headers:
         "x-honeycomb-team": ${HONEYCOMB_API_DEV_TOKEN}
-    # this needs to be $HNC_STAGE_TOKEN for shared-stage honeycomb environment 
+    # this needs to be $HNC_STAGE_TOKEN for shared-stage honeycomb environment
     otlp/stage:
       endpoint: https://api.honeycomb.io:443
       headers:
-        "x-honeycomb-team": ${HONEYCOMB_API_STAGE_TOKEN}   
+        "x-honeycomb-team": ${HONEYCOMB_API_STAGE_TOKEN}
     sapm:
       access_token: ${SIGNALFX_ACCESS_TOKEN}
       endpoint: "https://ingest.us1.signalfx.com/v2/trace"
@@ -43,14 +46,16 @@ config:
       api_url: "https://api.us1.signalfx.com"
   extensions:
     # The health_check extension is mandatory for this chart.
-    # Without the health_check extension the collector will fail the readiness and liveliness probes.
+    # Without the health_check extension the collector will fail the
+    # readiness and liveliness probes.
     # The health_check extension can be modified, but should never be removed.
     health_check: {}
     memory_ballast: {}
   processors:
     batch: {}
-    # If set to null, will be overridden with values based on k8s resource limits
-    memory_limiter: 
+    # If set to null, will be overridden with
+    # values based on k8s resource limits
+    memory_limiter:
       check_interval: 2s
       limit_mib: 512
       spike_limit_percentage: 128
@@ -149,7 +154,8 @@ serviceAccount:
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
+  # If not set and create is true, a name is generated
+  # using the fullname template
   name: ""
 
 clusterRole:
@@ -158,16 +164,19 @@ clusterRole:
   # Annotations to add to the clusterRole
   annotations: {}
   # The name of the clusterRole to use.
-  # If not set and create is true, a name is generated using the fullname template
+  # If not set and create is true, a name is generated
+  # using the fullname template
   name: ""
-  # A set of rules as documented here : https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+  # A set of rules as documented here:
+  # https://kubernetes.io/docs/reference/access-authn-authz/rbac/
   rules: []
 
   clusterRoleBinding:
     # Annotations to add to the clusterRoleBinding
     annotations: {}
     # The name of the clusterRoleBinding to use.
-    # If not set and create is true, a name is generated using the fullname template
+    # If not set and create is true, a name is generated
+    # using the fullname template
     name: ""
 
 
@@ -195,13 +204,13 @@ extraEnvs:
       secretKeyRef:
         name: "{{ otel_collector_name }}-opentelemetry-collector"
         key: splunk_observability_access_token
-extraVolumes: 
+extraVolumes:
   - name: "{{ otel_collector_redhat_ca_bundle}}"
     configMap:
       name: "{{ otel_collector_redhat_ca_bundle}}"
       defaultMode: 420
 
-extraVolumeMounts: 
+extraVolumeMounts:
   - name: "{{ otel_collector_redhat_ca_bundle}}"
     mountPath: /etc/ssl/certs/ca-certificates.crt
     subPath: ca-bundle.crt
@@ -254,7 +263,9 @@ ports:
     enabled: false
 
 
-# Resource limits & requests. Update according to your own use case as these values might be too low for a typical deployment.
+# Resource limits & requests. Update according to your
+# own use case as these
+# values might be too low for a typical deployment.
 resources:
   limits:
     cpu: 1000m
@@ -281,8 +292,8 @@ initContainers: []
 lifecycleHooks: {}
 
 service:
-#  type: LoadBalancer for mpp environment only
-  type: {{ serviceType }}
+  #  type: LoadBalancer for mpp environment only
+  type: {{serviceType}}
   annotations: {}
 ingress:
   enabled: false
