@@ -295,6 +295,7 @@ service:
   #  type: LoadBalancer for mpp environment only
   type: ClusterIP
   annotations: {}
+  port: 4317
 ingress:
   enabled: false
 
