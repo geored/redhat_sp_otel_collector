@@ -3,5 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ .Chart.Name }}-config
 data:
-  config.yaml: |-
-    {{ .Files.Get "config.yaml" | indent 4 }}
+  {{- with .Values.configFile }}
+    config.yaml: |
+      {{- . | nindent 6}}
+  {{- end }}
