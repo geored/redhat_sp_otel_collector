@@ -1,15 +1,35 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "redhat-sp-otel-collector.fullname" . }}
+  name: {{ .Chart.Name }}-service
   labels:
-    {{- include "redhat-sp-otel-collector.labels" . | nindent 4 }}
+    app: {{ .Values.application.label }}
 spec:
-  type: {{ .Values.service.type }}
-  ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
   selector:
-    {{- include "redhat-sp-otel-collector.selectorLabels" . | nindent 4 }}
+    app: {{ .Chart.Name }}
+  ports:
+    # we should do it with iteration through values 
+    - name: {{ .Values.service.ports.otlp.name }}
+      protocol: {{ .Values.service.ports.otlp.protocol }}
+      port: {{ .Values.service.ports.otlp.servicePort }}
+      targetPort: {{ .Values.service.ports.otlp.hostPort }}
+    - name: {{ .Values.service.ports.otlphttp.name }}
+      protocol: {{ .Values.service.ports.otlphttp.protocol }}
+      port: {{ .Values.service.ports.otlphttp.servicePort }}
+      targetPort: {{ .Values.service.ports.otlphttp.hostPort }}
+    - name: {{ .Values.service.ports.otlpdev.name }}
+      protocol: {{ .Values.service.ports.otlpdev.protocol }}
+      port: {{ .Values.service.ports.otlpdev.servicePort }}
+      targetPort: {{ .Values.service.ports.otlpdev.hostPort }}
+    - name: {{ .Values.service.ports.otlpdevhttp.name }}
+      protocol: {{ .Values.service.ports.otlpdevhttp.protocol }}
+      port: {{ .Values.service.ports.otlpdevhttp.servicePort }}
+      targetPort: {{ .Values.service.ports.otlpdevhttp.hostPort }}
+    - name: {{ .Values.service.ports.otlpstage.name }}
+      protocol: {{ .Values.service.ports.otlpstage.protocol }}
+      port: {{ .Values.service.ports.otlpstage.servicePort }}
+      targetPort: {{ .Values.service.ports.otlpstage.hostPort }}
+    - name: {{ .Values.service.ports.otlpstagehttp.name }}
+      protocol: {{ .Values.service.ports.otlpstagehttp.protocol }}
+      port: {{ .Values.service.ports.otlpstagehttp.servicePort }}
+      targetPort: {{ .Values.service.ports.otlpstagehttp.hostPort }}

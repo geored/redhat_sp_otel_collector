@@ -2,137 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
----
 mode: "deployment"
-
-# Define openshift cluster type:  if it is MP+ then clusterMpp should be true
-# for every other type clusterMpp should be false
-# This will determine what type of openshift service type will be created for
-# the collector
-clusterType:
-  clusterMpp: false
-
-
-configMap:
-  create: true
-
-# ConfigMap configuration for the collector:
-config:
-  exporters:
-    logging:
-      loglevel: info
-    # this can be only otlp exporter
-    otlphttp:
-      endpoint: https://api.honeycomb.io:443
-      headers:
-        "x-honeycomb-team": ${HONEYCOMB_API_TOKEN}
-    # this needs to be $HNC_DEV_TOKEN for shared-dev honeycomb environment
-    otlp/dev:
-      endpoint: https://api.honeycomb.io:443
-      headers:
-        "x-honeycomb-team": ${HONEYCOMB_API_DEV_TOKEN}
-    # this needs to be $HNC_STAGE_TOKEN for shared-stage honeycomb environment
-    otlp/stage:
-      endpoint: https://api.honeycomb.io:443
-      headers:
-        "x-honeycomb-team": ${HONEYCOMB_API_STAGE_TOKEN}
-    sapm:
-      access_token: ${SIGNALFX_ACCESS_TOKEN}
-      endpoint: "https://ingest.us1.signalfx.com/v2/trace"
-    signalfx:
-      endpoint: "https://api.signalfx.com/v2/traces"
-      access_token: ${SIGNALFX_ACCESS_TOKEN}
-      realm: "us1"
-      api_url: "https://api.us1.signalfx.com"
-  extensions:
-    # The health_check extension is mandatory for this chart.
-    # Without the health_check extension the collector will fail the
-    # readiness and liveliness probes.
-    # The health_check extension can be modified, but should never be removed.
-    health_check: {}
-    memory_ballast: {}
-  processors:
-    batch: {}
-    # If set to null, will be overridden with
-    # values based on k8s resource limits
-    memory_limiter:
-      check_interval: 2s
-      limit_mib: 512
-      spike_limit_percentage: 128
-  receivers:
-    jaeger: null
-    prometheus: null
-    zipkin: null
-    otlp:
-      protocols:
-        grpc:
-          endpoint: 0.0.0.0:4317
-          max_recv_msg_size_mib: 999999999
-        http:
-          endpoint: 0.0.0.0:4318
-    otlp/dev:
-      protocols:
-        grpc:
-          endpoint: 0.0.0.0:4319
-          max_recv_msg_size_mib: 999999999
-        http:
-          endpoint: 0.0.0.0:4320
-    otlp/stage:
-      protocols:
-        grpc:
-          endpoint: 0.0.0.0:4321
-          max_recv_msg_size_mib: 999999999
-        http:
-          endpoint: 0.0.0.0:4322
-  service:
-    extensions:
-      - health_check
-      - memory_ballast
-    pipelines:
-      logs:
-        exporters:
-          - logging
-        receivers:
-          - otlp
-          - otlp/dev
-          - otlp/stage
-
-      traces:
-        exporters:
-          - logging
-          - otlphttp
-          - signalfx
-          - sapm
-        processors:
-          - memory_limiter
-          - batch
-        receivers:
-          - otlp
-
-      traces/dev:
-        exporters:
-          - logging
-          - otlp/dev
-          - sapm
-          - signalfx
-        processors:
-          - memory_limiter
-          - batch
-        receivers:
-          - otlp/dev
-
-      traces/stage:
-        exporters:
-          - logging
-          - otlp/stage
-          - sapm
-          - signalfx
-        processors:
-          - memory_limiter
-          - batch
-        receivers:
-          - otlp/stage
-      metrics: null
 
 
 image:
@@ -140,6 +10,7 @@ image:
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
+  args: "--config=/etc/otel/collector/config.yaml"
 
 
 # OpenTelemetry Collector executable
@@ -147,41 +18,6 @@ command:
   name: otelcol-contrib
   extraArgs: []
 
-
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated
-  # using the fullname template
-  name: ""
-
-clusterRole:
-  # Specifies whether a clusterRole should be created
-  create: false
-  # Annotations to add to the clusterRole
-  annotations: {}
-  # The name of the clusterRole to use.
-  # If not set and create is true, a name is generated
-  # using the fullname template
-  name: ""
-  # A set of rules as documented here:
-  # https://kubernetes.io/docs/reference/access-authn-authz/rbac/
-  rules: []
-
-  clusterRoleBinding:
-    # Annotations to add to the clusterRoleBinding
-    annotations: {}
-    # The name of the clusterRoleBinding to use.
-    # If not set and create is true, a name is generated
-    # using the fullname template
-    name: ""
-
-
-# Allows for pod scheduler prioritisation
-priorityClassName: ""
 
 extraEnvs:
   - name: HONEYCOMB_API_TOKEN
@@ -215,53 +51,6 @@ extraVolumeMounts:
     mountPath: /etc/ssl/certs/ca-certificates.crt
     subPath: ca-bundle.crt
 
-# Configuration for ports
-ports:
-  otlp:
-    enabled: true
-    containerPort: 4317
-    servicePort: 4317
-    hostPort: 4317
-    protocol: TCP
-  otlp-http:
-    enabled: true
-    containerPort: 4318
-    servicePort: 4318
-    hostPort: 4318
-    protocol: TCP
-  otlp-dev:
-    enabled: true
-    containerPort: 4319
-    servicePort: 4319
-    hostPort: 4319
-    protocol: TCP
-  otlp-dev-http:
-    enabled: true
-    containerPort: 4320
-    servicePort: 4320
-    hostPort: 4320
-    protocol: TCP
-  otlp-stage:
-    enabled: true
-    containerPort: 4321
-    servicePort: 4321
-    hostPort: 4321
-    protocol: TCP
-  otlp-stage-http:
-    enabled: true
-    containerPort: 4322
-    servicePort: 4322
-    hostPort: 4322
-    protocol: TCP
-  jaeger-compact:
-    enabled: false
-  jaeger-thrift:
-    enabled: false
-  jaeger-grpc:
-    enabled: false
-  zipkin:
-    enabled: false
-
 
 # Resource limits & requests. Update according to your
 # own use case as these
@@ -274,30 +63,78 @@ resources:
     cpu: 1000m
     memory: 2000mi
 
-podAnnotations: {}
-
-podLabels: {}
-
-# Host networking requested for this pod. Use the host's network namespace.
-hostNetwork: false
-
-# Pod DNS policy ClusterFirst, ClusterFirstWithHostNet, None, Default, None
-dnsPolicy: ""
 
 # only used with deployment mode
 replicaCount: 2
 
-initContainers: []
-# Pod lifecycle policies.
-lifecycleHooks: {}
+application:
+  label: "sp-otel-collector"
 
 service:
   #  type: LoadBalancer for mpp environment only
   type: ClusterIP
   annotations: {}
-  port: 4317
-ingress:
-  enabled: false
+  # Configuration for ports
+  ports:
+    otlp:
+      enabled: true
+      containerPort: 4317
+      servicePort: 4317
+      hostPort: 4317
+      protocol: TCP
+      name: otlp-grpc
+    otlphttp:
+      enabled: true
+      containerPort: 4318
+      servicePort: 4318
+      hostPort: 4318
+      protocol: TCP
+      name: otlp-http
+    otlpdev:
+      enabled: true
+      containerPort: 4319
+      servicePort: 4319
+      hostPort: 4319
+      protocol: TCP
+      name: otlp-grpc-dev
+    otlpdevhttp:
+      enabled: true
+      containerPort: 4320
+      servicePort: 4320
+      hostPort: 4320
+      protocol: TCP
+      name: otlp-http-dev
+    otlpstage:
+      enabled: true
+      containerPort: 4321
+      servicePort: 4321
+      hostPort: 4321
+      protocol: TCP
+      name: otlp-grpc-stage
+    otlpstagehttp:
+      enabled: true
+      containerPort: 4322
+      servicePort: 4322
+      hostPort: 4322
+      protocol: TCP
+      name: otlp-http-stage
+    jaegercompact:
+      enabled: false
+    jaegerthrift:
+      enabled: false
+    jaegergrpc:
+      enabled: false
+    zipkin:
+      enabled: false
+  ingress:
+    enabled: false
+
+tokens:
+  honeycomb_dev_token: ""
+  honeycomb_stage_token: ""
+  honeycomb_prod_token: ""
+  signalfx_default: ""
+  ssh_private_key: ""
 
 # autoscaling is used only if deployment enabled
 autoscaling:
