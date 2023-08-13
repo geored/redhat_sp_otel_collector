@@ -123,9 +123,6 @@ configFile: |-
         - batch
         receivers:
         - otlp/stage
-    telemetry:
-      metrics:
-        address: ${env:MY_POD_IP}:8888
 
 
 extraEnvs:
@@ -133,7 +130,7 @@ extraEnvs:
     valueFrom:
       secretKeyRef:
         name: "otel_collector_name-opentelemetry-collector"
-        key: honeycomb_token
+        key: honeycomb_prod_token
   - name: HONEYCOMB_API_DEV_TOKEN
     valueFrom:
       secretKeyRef:
@@ -148,7 +145,7 @@ extraEnvs:
     valueFrom:
       secretKeyRef:
         name: "otel_collector_name-opentelemetry-collector"
-        key: splunk_observability_access_token
+        key: signalfx_default
 extraVolumes:
   - name: "otel_collector_redhat_ca_bundle"
     configMap:
@@ -178,6 +175,7 @@ replicaCount: 2
 
 application:
   label: "sp-otel-collector"
+
 
 service:
   #  type: LoadBalancer for mpp environment only
@@ -227,16 +225,8 @@ service:
       hostPort: 4322
       protocol: TCP
       name: otlp-http-stage
-    jaegercompact:
-      enabled: false
-    jaegerthrift:
-      enabled: false
-    jaegergrpc:
-      enabled: false
-    zipkin:
-      enabled: false
-  ingress:
-    enabled: false
+
+
 
 tokens:
   honeycomb_dev_token: "-----"

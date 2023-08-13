@@ -1,35 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Chart.Name }}-service
+  name: {{ .Values.application.label }}-service
   labels:
     app: {{ .Values.application.label }}
 spec:
   selector:
-    app: {{ .Chart.Name }}
+    app: {{ .Values.application.label }}
   ports:
-    # we should do it with iteration through values 
-    - name: {{ .Values.service.ports.otlp.name }}
-      protocol: {{ .Values.service.ports.otlp.protocol }}
-      port: {{ .Values.service.ports.otlp.servicePort }}
-      targetPort: {{ .Values.service.ports.otlp.hostPort }}
-    - name: {{ .Values.service.ports.otlphttp.name }}
-      protocol: {{ .Values.service.ports.otlphttp.protocol }}
-      port: {{ .Values.service.ports.otlphttp.servicePort }}
-      targetPort: {{ .Values.service.ports.otlphttp.hostPort }}
-    - name: {{ .Values.service.ports.otlpdev.name }}
-      protocol: {{ .Values.service.ports.otlpdev.protocol }}
-      port: {{ .Values.service.ports.otlpdev.servicePort }}
-      targetPort: {{ .Values.service.ports.otlpdev.hostPort }}
-    - name: {{ .Values.service.ports.otlpdevhttp.name }}
-      protocol: {{ .Values.service.ports.otlpdevhttp.protocol }}
-      port: {{ .Values.service.ports.otlpdevhttp.servicePort }}
-      targetPort: {{ .Values.service.ports.otlpdevhttp.hostPort }}
-    - name: {{ .Values.service.ports.otlpstage.name }}
-      protocol: {{ .Values.service.ports.otlpstage.protocol }}
-      port: {{ .Values.service.ports.otlpstage.servicePort }}
-      targetPort: {{ .Values.service.ports.otlpstage.hostPort }}
-    - name: {{ .Values.service.ports.otlpstagehttp.name }}
-      protocol: {{ .Values.service.ports.otlpstagehttp.protocol }}
-      port: {{ .Values.service.ports.otlpstagehttp.servicePort }}
-      targetPort: {{ .Values.service.ports.otlpstagehttp.hostPort }}
+    {{- range $otlp := .Values.service.ports }}
+   - name: {{ $otlp.name  }}
+     protocol: {{ $otlp.protocol }}
+     port: {{ $otlp.servicePort | int }}
+     targetPort: {{ $otlp.hostPort | int }}
+    {{- end }}

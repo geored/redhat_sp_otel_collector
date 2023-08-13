@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Chart.Name }}-deployment
+  name: {{ .Values.application.label }}-deployment
   labels:
     app: {{ .Values.application.label }}
 spec:
@@ -20,15 +20,30 @@ spec:
           args:
             - {{ .Values.image.args | quote }}
           ports:
-            - containerPort: 4317
-              name: otlp-grpc
-            - containerPort: 4318
-              name: otlp-http
+            {{- range $otlp := .Values.service.ports }}
+           - name:  {{ $otlp.name }}
+             containerPort:  {{ $otlp.containerPort | int }}
+            {{- end }}
+          env:
+           {{- range $env := .Values.extraEnvs }}
+           - name: {{ $env.name  }}
+             valueFrom:
+               secretKeyRef:
+                 name: {{ $.Values.application.label }}-env
+                 key: {{ $env.valueFrom.secretKeyRef.key }}
+           {{- end }}
           volumeMounts:
-            - name: {{ .Chart.Name }}-config
+            - name: {{ .Values.application.label }}-config
               mountPath: /etc/otel/collector/config.yaml
               subPath: config.yaml
+            - name: {{ .Values.application.label }}-ca-bundle
+              mountPath: /etc/ssl/certs/ca-certificates.crt
+              subPath: ca-bundle.crt
       volumes:
-        - name: {{ .Chart.Name }}-config
+        - name: {{ .Values.application.label }}-config
           configMap:
-            name: {{ .Chart.Name }}-config
+            name: {{ .Values.application.label }}-config
+        - name: {{ .Values.application.label }}-ca-bundle"
+          configMap:
+            name: {{ .Values.application.label }}-ca-bundle"
+            defaultMode: 420

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Chart.Name }}-config
+  name: {{ .Values.application.label }}-config
 data:
   {{- with .Values.configFile }}
     config.yaml: |
