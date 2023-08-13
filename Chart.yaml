@@ -28,7 +28,11 @@ sources:
 
 icon: https://pics.freeicons.io/uploads/icons/png/14807921901620054575-512.png
 
+keywords:
+  - otel-collector, open telemetry, tracing
+
+home: https://github.com/geored/redhat_sp_otel_collector
+
 maintainers:
   - name: geored
-  - name: rrajashe
-  - name: osevcik
+    email: ggeorgie@redhat.com
