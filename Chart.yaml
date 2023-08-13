@@ -1,6 +1,6 @@
 apiVersion: v2
 name: sp-otel-collector
-displayname: "SP oTel Collector"
+
 description: A Helm chart for SP openshift clusters collectors
 
 # A chart can be either an 'application' or a 'library' chart.
